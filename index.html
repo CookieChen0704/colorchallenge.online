@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>颜色挑战游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .language-btn, .start-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .language-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .start-btn {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .language-btn:hover, .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .game-info {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .info-item {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .game-board {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .color-block {
+            width: 160px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            font-size: 48px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            text-align: center;
+            padding: 10px;
+            word-wrap: break-word;
+            line-height: 1.1;
+        }
+
+        .color-block.active {
+            border: 5px solid #FFD700;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px #FFD700, 0 0 60px #FFD700, 0 0 90px #FFD700;
+            animation: flashingGlow 0.6s infinite;
+        }
+
+        @keyframes flashingGlow {
+            0% { 
+                box-shadow: 0 0 30px #FFD700, 0 0 60px #FFD700, 0 0 90px #FFD700;
+                border-color: #FFD700;
+            }
+            50% { 
+                box-shadow: 0 0 50px #FF4444, 0 0 80px #FF4444, 0 0 120px #FF4444;
+                border-color: #FF4444;
+            }
+            100% { 
+                box-shadow: 0 0 30px #FFD700, 0 0 60px #FFD700, 0 0 90px #FFD700;
+                border-color: #FFD700;
+            }
+        }
+
+        .choice-section {
+            text-align: center;
+        }
+
+        .choice-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .color-choices {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .choice-btn {
+            width: 80px;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .choice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .timer-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FFC107, #F44336);
+            border-radius: 5px;
+            transition: width 0.1s linear;
+        }
+
+        .game-over, .game-win {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
+        }
+
+        .modal h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .modal p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            background: #667eea;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .instructions {
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .instructions p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title" id="title">选择颜色而不是文字</h1>
+        <div class="controls">
+            <button class="language-btn" onclick="toggleLanguage()" id="langBtn">English</button>
+            <button class="start-btn" onclick="startGame()" id="startBtn">开始游戏</button>
+        </div>
+    </div>
+
+    <div class="instructions" id="instructions">
+        <p id="instruction1">当色块高亮时，请选择色块的<strong>背景颜色</strong>，而不是文字颜色！</p>
+        <p id="instruction2">你有2秒钟时间做出选择，完成9轮即可获胜。</p>
+        <p id="instruction3">注意：选择文字颜色将导致游戏失败！</p>
+    </div>
+
+    <div class="game-info">
+        <div class="info-item">
+            <span id="roundLabel">轮次</span>: <span id="currentRound">0</span>/9
+        </div>
+        <div class="info-item">
+            <span id="scoreLabel">得分</span>: <span id="score">0</span>
+        </div>
+    </div>
+
+    <div class="game-board">
+        <div class="color-grid" id="colorGrid">
+            <!-- 3x3色块将通过JS生成 -->
+        </div>
+
+        <div class="timer-bar">
+            <div class="timer-fill" id="timerFill"></div>
+        </div>
+
+        <div class="choice-section">
+            <h3 class="choice-title" id="choiceTitle">选择色块的背景颜色：</h3>
+            <div class="color-choices" id="colorChoices">
+                <!-- 颜色选择按钮将通过JS生成 -->
+            </div>
+        </div>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <div class="modal">
+            <h2 id="gameOverTitle">游戏结束</h2>
+            <p id="gameOverMessage">很遗憾，游戏失败了！</p>
+            <button class="restart-btn" onclick="restartGame()" id="restartBtn">重新开始</button>
+        </div>
+    </div>
+
+    <div class="game-win" id="gameWin">
+        <div class="modal">
+            <h2 id="gameWinTitle">恭喜获胜！</h2>
+            <p id="gameWinMessage">你成功完成了所有9轮挑战！</p>
+            <button class="restart-btn" onclick="restartGame()" id="winRestartBtn">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏配置
+        const colors = {
+            red: { bg: '#FF4444', name: { zh: '红色', en: 'Red' } },
+            blue: { bg: '#4444FF', name: { zh: '蓝色', en: 'Blue' } },
+            green: { bg: '#44AA44', name: { zh: '绿色', en: 'Green' } },
+            yellow: { bg: '#FFD700', name: { zh: '黄色', en: 'Yellow' } },
+            orange: { bg: '#FF8800', name: { zh: '橘色', en: 'Orange' } },
+            black: { bg: '#333333', name: { zh: '黑色', en: 'Black' } },
+            purple: { bg: '#8844FF', name: { zh: '紫色', en: 'Purple' } },
+            pink: { bg: '#FF88CC', name: { zh: '粉色', en: 'Pink' } },
+            brown: { bg: '#8B4513', name: { zh: '棕色', en: 'Brown' } }
+        };
+
+        const colorKeys = Object.keys(colors);
+        let currentLanguage = 'zh';
+        let gameState = {
+            isActive: false,
+            currentRound: 0,
+            score: 0,
+            activeBlock: null,
+            correctColor: null,
+            timer: null,
+            timeLeft: 2000
+        };
+
+        // 语言文本
+        const texts = {
+            zh: {
+                title: '选择颜色而不是文字',
+                langBtn: 'English',
+                startBtn: '开始游戏',
+                roundLabel: '轮次',
+                scoreLabel: '得分',
+                choiceTitle: '选择色块的背景颜色：',
+                gameOverTitle: '游戏结束',
+                gameOverMessage: '很遗憾，游戏失败了！',
+                gameWinTitle: '恭喜获胜！',
+                gameWinMessage: '你成功完成了所有9轮挑战！',
+                restartBtn: '重新开始',
+                winRestartBtn: '再玩一次',
+                instruction1: '当色块高亮时，请选择色块的<strong>背景颜色</strong>，而不是文字颜色！',
+                instruction2: '你有2秒时间做出选择，完成9轮即可获胜。',
+                instruction3: '注意：选择文字颜色将导致游戏失败！'
+            },
+            en: {
+                title: 'Choose the Color not the Word',
+                langBtn: '中文',
+                startBtn: 'Start Game',
+                roundLabel: 'Round',
+                scoreLabel: 'Score',
+                choiceTitle: 'Choose the background color of the block:',
+                gameOverTitle: 'Game Over',
+                gameOverMessage: 'Sorry, you failed the challenge!',
+                gameWinTitle: 'Congratulations!',
+                gameWinMessage: 'You completed all 9 rounds successfully!',
+                restartBtn: 'Restart',
+                winRestartBtn: 'Play Again',
+                instruction1: 'When a block is highlighted, choose the <strong>background color</strong>, not the text color!',
+                instruction2: 'You have 2 seconds to make your choice. Complete 9 rounds to win.',
+                instruction3: 'Warning: Choosing the text color will result in failure!'
+            }
+        };
+
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'zh' ? 'en' : 'zh';
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            const t = texts[currentLanguage];
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('langBtn').textContent = t.langBtn;
+            document.getElementById('startBtn').textContent = t.startBtn;
+            document.getElementById('roundLabel').textContent = t.roundLabel;
+            document.getElementById('scoreLabel').textContent = t.scoreLabel;
+            document.getElementById('choiceTitle').textContent = t.choiceTitle;
+            document.getElementById('gameOverTitle').textContent = t.gameOverTitle;
+            document.getElementById('gameOverMessage').textContent = t.gameOverMessage;
+            document.getElementById('gameWinTitle').textContent = t.gameWinTitle;
+            document.getElementById('gameWinMessage').textContent = t.gameWinMessage;
+            document.getElementById('restartBtn').textContent = t.restartBtn;
+            document.getElementById('winRestartBtn').textContent = t.winRestartBtn;
+            document.getElementById('instruction1').innerHTML = t.instruction1;
+            document.getElementById('instruction2').textContent = t.instruction2;
+            document.getElementById('instruction3').textContent = t.instruction3;
+            
+            // 更新色块和选择按钮的文字
+            createColorGrid();
+            createColorChoices();
+        }
+
+        function startGame() {
+            gameState = {
+                isActive: true,
+                currentRound: 0,
+                score: 0,
+                activeBlock: null,
+                correctColor: null,
+                timer: null,
+                timeLeft: 2000
+            };
+            
+            updateGameInfo();
+            createColorGrid();
+            createColorChoices();
+            nextRound();
+        }
+
+        function createColorGrid() {
+            const grid = document.getElementById('colorGrid');
+            grid.innerHTML = '';
+            
+            // 创建9种不同背景颜色的数组
+            const shuffledBgColors = [...colorKeys].sort(() => Math.random() - 0.5);
+            // 创建9种不同文字颜色（单词内容）的数组
+            const shuffledTextColors = [...colorKeys].sort(() => Math.random() - 0.5);
+            
+            // 确保文字颜色与对应的背景颜色不同
+            for (let i = 0; i < 9; i++) {
+                if (shuffledTextColors[i] === shuffledBgColors[i]) {
+                    // 如果冲突，与下一个位置交换（如果是最后一个，与前一个交换）
+                    const swapIndex = i === 8 ? i - 1 : i + 1;
+                    [shuffledTextColors[i], shuffledTextColors[swapIndex]] = 
+                    [shuffledTextColors[swapIndex], shuffledTextColors[i]];
+                }
+            }
+            
+            // 创建3x3网格
+            for (let i = 0; i < 9; i++) {
+                const block = document.createElement('div');
+                block.className = 'color-block';
+                block.id = `block-${i}`;
+                
+                const bgColorKey = shuffledBgColors[i];
+                const textColorKey = shuffledTextColors[i];
+                
+                block.style.backgroundColor = colors[bgColorKey].bg;
+                block.style.color = 'white'; // 所有文字使用白色
+                block.textContent = colors[textColorKey].name[currentLanguage];
+                
+                // 存储颜色信息
+                block.dataset.bgColor = bgColorKey;
+                block.dataset.textColor = textColorKey;
+                
+                grid.appendChild(block);
+            }
+        }
+
+        function createColorChoices() {
+            const choices = document.getElementById('colorChoices');
+            choices.innerHTML = '';
+            
+            colorKeys.forEach(colorKey => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.style.backgroundColor = colors[colorKey].bg;
+                btn.style.color = 'white';
+                btn.textContent = colors[colorKey].name[currentLanguage];
+                btn.onclick = () => makeChoice(colorKey);
+                
+                // 设置文字颜色对比度
+                if (colorKey === 'yellow') {
+                    btn.style.color = '#333';
+                }
+                
+                choices.appendChild(btn);
+            });
+        }
+
+        function nextRound() {
+            if (gameState.currentRound >= 9) {
+                endGame(true);
+                return;
+            }
+            
+            gameState.currentRound++;
+            updateGameInfo();
+            
+            // 清除之前的高亮
+            document.querySelectorAll('.color-block').forEach(block => {
+                block.classList.remove('active');
+            });
+            
+            // 随机选择一个色块高亮
+            const blockIndex = Math.floor(Math.random() * 9);
+            const activeBlock = document.getElementById(`block-${blockIndex}`);
+            activeBlock.classList.add('active');
+            
+            gameState.activeBlock = activeBlock;
+            gameState.correctColor = activeBlock.dataset.bgColor;
+            
+            // 开始计时
+            startTimer();
+        }
+
+        function startTimer() {
+            gameState.timeLeft = 2000;
+            const timerFill = document.getElementById('timerFill');
+            
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft -= 100;
+                const percentage = (gameState.timeLeft / 2000) * 100;
+                timerFill.style.width = percentage + '%';
+                
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(gameState.timer);
+                    endGame(false);
+                }
+            }, 100);
+        }
+
+        function makeChoice(chosenColor) {
+            if (!gameState.isActive || !gameState.timer) return;
+            
+            clearInterval(gameState.timer);
+            
+            // 检查选择是否正确
+            if (chosenColor === gameState.correctColor) {
+                gameState.score += 100;
+                updateGameInfo();
+                
+                // 短暂延迟后进行下一轮
+                setTimeout(() => {
+                    if (gameState.isActive) {
+                        nextRound();
+                    }
+                }, 500);
+            } else {
+                endGame(false);
+            }
+        }
+
+        function updateGameInfo() {
+            document.getElementById('currentRound').textContent = gameState.currentRound;
+            document.getElementById('score').textContent = gameState.score;
+        }
+
+        function endGame(won) {
+            gameState.isActive = false;
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+            
+            // 清除高亮
+            document.querySelectorAll('.color-block').forEach(block => {
+                block.classList.remove('active');
+            });
+            
+            if (won) {
+                document.getElementById('gameWin').style.display = 'flex';
+            } else {
+                document.getElementById('gameOver').style.display = 'flex';
+            }
+        }
+
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('gameWin').style.display = 'none';
+            document.getElementById('timerFill').style.width = '100%';
+            startGame();
+        }
+
+        // 初始化游戏
+        window.onload = function() {
+            updateLanguage();
+            createColorGrid();
+            createColorChoices();
+        };
+    </script>
+</body>
+</html>
